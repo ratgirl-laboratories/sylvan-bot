@@ -122,6 +122,7 @@ public static class DependencyInjection
                 return new DiscordSocketClient(
                     new DiscordSocketConfig
                     {
+                        AlwaysDownloadUsers = true,
                         MessageCacheSize = options.MessageCacheSize,
                         GatewayIntents =
                             GatewayIntents.Guilds
@@ -157,11 +158,9 @@ public static class DependencyInjection
             services.AddSingleton<MetaProposalPollResolver>();
             services.AddSingleton<MetaProposalGatewayHandler>();
             services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<MetaProposalGatewayHandler>());
-            services.AddSingleton<GuildMemberCacheService>();
             services.AddSingleton<ITrackedEmojiCatalog, TrackedEmojiCatalog>();
 
             services.AddHostedService<DiscordBotHostedService>();
-            services.AddHostedService<GuildMemberCacheBackgroundWorker>();
             services.AddHostedService<EmojiAnalyticsBackgroundWorker>();
 
             services.AddScoped<RoleColourOperations>();

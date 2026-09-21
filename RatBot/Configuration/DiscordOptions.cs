@@ -15,9 +15,6 @@ public sealed class DiscordOptions
     [Range(0, 7)]
     public int ImageBurstSpamHistoryPruneDays { get; init; } = 1;
 
-    [Range(5, 1440)]
-    public int MemberCacheRefreshIntervalMinutes { get; init; } = 30;
-
     [Range(1000, 50000)]
     public int MessageCacheSize { get; init; } = 5000;
 

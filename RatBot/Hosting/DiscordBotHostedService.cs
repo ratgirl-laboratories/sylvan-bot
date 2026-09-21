@@ -8,7 +8,6 @@ public sealed class DiscordBotHostedService : IHostedService
 {
     private readonly DiscordSocketClient _discordClient;
     private readonly IEnumerable<IDiscordGatewayHandler> _gatewayHandlers;
-    private readonly GuildMemberCacheService _guildMemberCacheService;
     private readonly ILogger _logger;
     private readonly DiscordOptions _options;
 
@@ -16,14 +15,12 @@ public sealed class DiscordBotHostedService : IHostedService
         DiscordSocketClient discordClient,
         InteractionService interactionService,
         IEnumerable<IDiscordGatewayHandler> gatewayHandlers,
-        GuildMemberCacheService guildMemberCacheService,
         IOptions<DiscordOptions> options,
         ILogger logger
     )
     {
         _discordClient = discordClient;
         _gatewayHandlers = gatewayHandlers;
-        _guildMemberCacheService = guildMemberCacheService;
         _options = options.Value;
         _logger = logger.ForContext<DiscordBotHostedService>();
 
@@ -44,7 +41,6 @@ public sealed class DiscordBotHostedService : IHostedService
     {
         _discordClient.Connected += OnConnectedAsync;
         _discordClient.Disconnected += OnDisconnectedAsync;
-        _discordClient.GuildAvailable += OnGuildAvailableAsync;
         _discordClient.GuildMembersDownloaded += OnGuildMembersDownloadedAsync;
 
         foreach (IDiscordGatewayHandler handler in _gatewayHandlers)
@@ -61,7 +57,6 @@ public sealed class DiscordBotHostedService : IHostedService
 
         _discordClient.Connected -= OnConnectedAsync;
         _discordClient.Disconnected -= OnDisconnectedAsync;
-        _discordClient.GuildAvailable -= OnGuildAvailableAsync;
         _discordClient.GuildMembersDownloaded -= OnGuildMembersDownloadedAsync;
 
         await _discordClient.StopAsync();
@@ -104,13 +99,6 @@ public sealed class DiscordBotHostedService : IHostedService
             _logger.Warning("Gateway disconnected.");
         else
             _logger.Warning(exception, "Gateway disconnected with error.");
-
-        return Task.CompletedTask;
-    }
-
-    private Task OnGuildAvailableAsync(SocketGuild guild)
-    {
-        _ = _guildMemberCacheService.EnsureGuildMembersDownloadedAsync(guild, "guild_available");
 
         return Task.CompletedTask;
     }
