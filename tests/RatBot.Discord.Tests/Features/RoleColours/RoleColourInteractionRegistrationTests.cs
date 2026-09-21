@@ -22,7 +22,7 @@ public sealed class RoleColourInteractionRegistrationTests
             .AddSingleton<RoleColourReconciler>()
             .BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });
 
-        using DiscordSocketClient client = new DiscordSocketClient();
+        await using DiscordSocketClient client = new DiscordSocketClient();
 
         using InteractionService interactions = new InteractionService(client, new InteractionServiceConfig { AutoServiceScopes = true });
 

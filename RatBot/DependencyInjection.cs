@@ -1,17 +1,13 @@
+using System.Threading.Channels;
 using Microsoft.EntityFrameworkCore;
 using RatBot.Application.Common.Forums;
-using RatBot.Application.Common.Interfaces;
-using RatBot.Application.Features.EmojiAnalytics;
 using RatBot.Application.Features.EmojiYoink;
 using RatBot.Application.Features.Logging;
 using RatBot.Application.Features.Quorum;
 using RatBot.Application.Features.Timezone;
-using RatBot.Application.MessageContent;
 using RatBot.Application.Moderation;
-using RatBot.Application.Reactions;
-using RatBot.BackgroundWorkers;
-using RatBot.Commands.Emoji;
 using RatBot.Configuration;
+using RatBot.Features.EmojiAnalytics;
 using RatBot.Features.EmojiYoink;
 using RatBot.Features.Logging;
 using RatBot.Features.Logging.BackgroundWorkers;
@@ -27,7 +23,6 @@ using RatBot.Handlers;
 using RatBot.Hosting;
 using RatBot.Infrastructure;
 using RatBot.Infrastructure.Data;
-using RatBot.Infrastructure.Features.EmojiAnalytics;
 using RatBot.Infrastructure.Features.Logging;
 using RatBot.Infrastructure.Features.Meta;
 using RatBot.Infrastructure.Features.Quorum.Persistence;
@@ -52,14 +47,10 @@ public static class DependencyInjection
 
         private void AddApplication()
         {
-            services.AddSingleton<ReactionQueue>();
-            services.AddSingleton<MessageContentQueue>();
             services.AddSingleton<ImageBurstSpamDetectorSettings>();
             services.AddSingleton(sp => new ImageBurstSpamDetector(TimeProvider.System, sp.GetRequiredService<ImageBurstSpamDetectorSettings>()));
 
             services.AddScoped<ImageSpamSettingsService>();
-            services.AddScoped<ReactionUsageTracker>();
-            services.AddScoped<EmojiUsageTracker>();
             services.AddScoped<IModerationService, ModerationService>();
             services.AddScoped<EmojiYoinkOperations>();
             services.AddScoped<QuorumOperations>();
@@ -76,7 +67,6 @@ public static class DependencyInjection
             services.AddScoped<IImageSpamSettingsStore, ImageSpamSettingsStore>();
             services.AddScoped<IQuorumConfigurationStore>(_ => new QuorumConfigurationStore(connectionString));
             services.AddScoped<IUserTimezoneStore>(_ => new UserTimezoneStore(connectionString));
-            services.AddScoped<IEmojiUsageStore, EmojiUsageStore>();
             services.AddSingleton<ModerationLoggingStore>();
             services.AddScoped<MetaProposalService>();
             services.AddScoped<MetaSuggestionSettingsService>();
@@ -144,10 +134,6 @@ public static class DependencyInjection
             services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<DiscordInteractionHandler>());
             services.AddSingleton<AutobanGatewayHandler>();
             services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<AutobanGatewayHandler>());
-            services.AddSingleton<ReactionGatewayHandler>();
-            services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<ReactionGatewayHandler>());
-            services.AddSingleton<MessageContentGatewayHandler>();
-            services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<MessageContentGatewayHandler>());
             services.AddSingleton(sp => new MessageEvidenceCache(sp.GetRequiredService<IOptions<LoggingOptions>>().Value.ToEvidenceCacheSettings()));
             services.AddSingleton<HttpClient>();
             services.AddSingleton<IGuildEmojiImporter, DiscordGuildEmojiImporter>();
@@ -158,10 +144,23 @@ public static class DependencyInjection
             services.AddSingleton<MetaProposalPollResolver>();
             services.AddSingleton<MetaProposalGatewayHandler>();
             services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<MetaProposalGatewayHandler>());
-            services.AddSingleton<ITrackedEmojiCatalog, TrackedEmojiCatalog>();
 
             services.AddHostedService<DiscordBotHostedService>();
-            services.AddHostedService<EmojiAnalyticsBackgroundWorker>();
+            services.AddSingleton(
+                Channel.CreateUnbounded<EmojiUsageIncrement>(
+                    new UnboundedChannelOptions
+                    {
+                        SingleReader = true,
+                        SingleWriter = false,
+                        AllowSynchronousContinuations = false,
+                    }
+                )
+            );
+            services.AddSingleton<IDiscordClient>(sp => sp.GetRequiredService<DiscordSocketClient>());
+            services.AddSingleton<EmojiUsageStore>();
+            services.AddSingleton<EmojiAnalyticsGatewayHandler>();
+            services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<EmojiAnalyticsGatewayHandler>());
+            services.AddHostedService<EmojiAnalyticsWorker>();
 
             services.AddScoped<RoleColourOperations>();
             services.AddSingleton<RoleColourReconciler>();

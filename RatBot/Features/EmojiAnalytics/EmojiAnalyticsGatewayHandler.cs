@@ -1,38 +1,79 @@
-using RatBot.Application.Reactions;
-using RatBot.Commands.Emoji;
+using System.Globalization;
+using System.Text.RegularExpressions;
+using System.Threading.Channels;
+using RatBot.Gateway;
 
-namespace RatBot.Gateway;
+namespace RatBot.Features.EmojiAnalytics;
 
-public sealed class ReactionGatewayHandler(
+public sealed class EmojiAnalyticsGatewayHandler(
     DiscordSocketClient discordClient,
-    ReactionQueue buffer,
+    Channel<EmojiUsageIncrement> buffer,
     IOptions<EmojiAnalyticsOptions> options,
     ILogger logger
 ) : IDiscordGatewayHandler
 {
-    private readonly ILogger _logger = logger.ForContext<ReactionGatewayHandler>();
+    private static readonly Regex EmojiRegex = new Regex(
+        @"<a?:\w{2,32}:(?<id>\d{17,21})>",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant,
+        TimeSpan.FromMilliseconds(100)
+    );
+
+    private readonly ILogger _logger = logger.ForContext<EmojiAnalyticsGatewayHandler>();
     private readonly EmojiAnalyticsOptions _options = options.Value;
 
     public Task InitializeAsync(CancellationToken ct)
     {
-        Subscribe();
-        return Task.CompletedTask;
-    }
-
-    public void Subscribe()
-    {
+        discordClient.MessageReceived += HandleMessageReceivedAsync;
         discordClient.ReactionAdded += HandleReactionAddedAsync;
         discordClient.ReactionRemoved += HandleReactionRemovedAsync;
         discordClient.ReactionsCleared += HandleReactionsClearedAsync;
         discordClient.ReactionsRemovedForEmote += HandleReactionsRemovedForEmoteAsync;
+        return Task.CompletedTask;
     }
 
     public void Unsubscribe()
     {
+        discordClient.MessageReceived -= HandleMessageReceivedAsync;
         discordClient.ReactionAdded -= HandleReactionAddedAsync;
         discordClient.ReactionRemoved -= HandleReactionRemovedAsync;
         discordClient.ReactionsCleared -= HandleReactionsClearedAsync;
         discordClient.ReactionsRemovedForEmote -= HandleReactionsRemovedForEmoteAsync;
+    }
+
+    private static EmojiUsageIncrement[] ExtractMessageIncrements(ulong guildId, string content) =>
+        EmojiRegex.Matches(content)
+            .Select(match => ulong.TryParse(match.Groups["id"].Value, NumberStyles.None, CultureInfo.InvariantCulture, out ulong id)
+                ? (ulong?)id : null)
+            .Where(id => id.HasValue)
+            .GroupBy(id => id!.Value)
+            .Select(group => new EmojiUsageIncrement(guildId, group.Key, group.Count(), 0))
+            .ToArray();
+
+    private async Task HandleMessageReceivedAsync(IMessage message)
+    {
+        if (message is not IUserMessage || message.Source != MessageSource.User
+            || message.Channel is not IGuildChannel guildChannel
+            || string.IsNullOrWhiteSpace(message.Content) || !_options.IsEnabled(guildChannel.GuildId))
+            return;
+
+        EmojiUsageIncrement[] increments;
+        try
+        {
+            increments = ExtractMessageIncrements(guildChannel.GuildId, message.Content);
+        }
+        catch (RegexMatchTimeoutException ex)
+        {
+            _logger.Warning(ex, "Emoji parsing timed out for a message in guild {GuildId}.", guildChannel.GuildId);
+            return;
+        }
+
+        foreach (EmojiUsageIncrement increment in increments)
+        {
+            if (!buffer.Writer.TryWrite(increment))
+                await buffer.Writer.WriteAsync(increment);
+        }
+
+        _logger.Debug("Queued {Count} message emoji increments for guild {GuildId}.", increments.Length, guildChannel.GuildId);
     }
 
     private async Task HandleReactionAddedAsync(
@@ -60,7 +101,7 @@ public sealed class ReactionGatewayHandler(
 
         LogReactionEvent("added", reaction.Emote, guildChannel.GuildId);
 
-        GuildReactionEmoji item = new GuildReactionEmoji(guildChannel.GuildId, customEmote.Id);
+        EmojiUsageIncrement item = new EmojiUsageIncrement(guildChannel.GuildId, customEmote.Id, 0, 1);
 
         if (!buffer.Writer.TryWrite(item))
             await buffer.Writer.WriteAsync(item);

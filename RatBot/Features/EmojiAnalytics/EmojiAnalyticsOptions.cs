@@ -1,4 +1,4 @@
-namespace RatBot.Commands.Emoji;
+namespace RatBot.Features.EmojiAnalytics;
 
 public sealed class EmojiAnalyticsOptions
 {

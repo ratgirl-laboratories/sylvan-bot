@@ -1,13 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using RatBot.Application.Common.Interfaces;
-using RatBot.Application.MessageContent;
-using RatBot.Application.Reactions;
-using RatBot.Domain.Emoji;
+using RatBot.Features.EmojiAnalytics;
 using RatBot.Features.RoleColours;
 using RatBot.Infrastructure.Data;
-using RatBot.Infrastructure.Features.EmojiAnalytics;
 using RatBot.Infrastructure.Stores;
-using Serilog;
 
 namespace RatBot.Infrastructure.Tests.Integration;
 
@@ -90,18 +85,16 @@ public sealed class MultiGuildPersistenceTests
         );
         await db.SaveChangesAsync();
 
-        EmojiUsageStore emojiUsageStore = new EmojiUsageStore(db);
-        ReactionUsageTracker tracker = new ReactionUsageTracker(emojiUsageStore, new StaticTrackedEmojiCatalog(), Log.Logger);
-        (await tracker.GetUsagePageAsync(1, 1, ct: CancellationToken.None)).Value.Items.Single().ReactionUsageCount.ShouldBe(1);
-        (await tracker.GetUsagePageAsync(2, 1, ct: CancellationToken.None)).Value.Items.Single().ReactionUsageCount.ShouldBe(5);
+        EmojiUsageStore emojiUsageStore = new EmojiUsageStore(new EmojiDbContextFactory());
+        (await emojiUsageStore.GetUsagePageAsync(1, [500UL], 1, ct: CancellationToken.None)).Value.Items.Single().ReactionUsageCount.ShouldBe(1);
+        (await emojiUsageStore.GetUsagePageAsync(2, [500UL], 1, ct: CancellationToken.None)).Value.Items.Single().ReactionUsageCount.ShouldBe(5);
 
-        ReactionUsageTracker pruningTracker = new ReactionUsageTracker(emojiUsageStore, new PruningTrackedEmojiCatalog(), Log.Logger);
-        ErrorOr<EmojiUsagePage> pruningRead = await pruningTracker.GetUsagePageAsync(1, 1, ct: CancellationToken.None);
+        ErrorOr<EmojiUsagePage> pruningRead = await emojiUsageStore.GetUsagePageAsync(1, [501UL], 1, ct: CancellationToken.None);
 
         pruningRead.FirstError.Type.ShouldBe(ErrorType.NotFound);
         (await db.EmojiUsageCounts.AnyAsync(x => x.GuildId == 1 && x.EmojiId == 500)).ShouldBeTrue();
 
-        await pruningTracker.RecordBatchUsageAsync(1, new ulong[] { 501 }, CancellationToken.None);
+        await emojiUsageStore.RecordBatchAsync(1, [new EmojiUsageIncrement(1, 501, 0, 1)], [501UL], CancellationToken.None);
 
         (await db.EmojiUsageCounts.AnyAsync(x => x.GuildId == 1 && x.EmojiId == 500)).ShouldBeFalse();
         EmojiUsageCount guild2Emoji = await db.EmojiUsageCounts.SingleAsync(x => x.GuildId == 2 && x.EmojiId == 500);
@@ -116,43 +109,21 @@ public sealed class MultiGuildPersistenceTests
         const ulong emojiId = 12345678901234567;
 
         await using BotDbContext db = PostgresDatabaseFixture.CreateDbContext();
-        EmojiUsageStore emojiUsageStore = new EmojiUsageStore(db);
-        AggregatingTrackedEmojiCatalog catalog = new AggregatingTrackedEmojiCatalog(emojiId);
-        EmojiUsageTracker messageTracker = new EmojiUsageTracker(emojiUsageStore, catalog, Log.Logger);
-        ReactionUsageTracker reactionTracker = new ReactionUsageTracker(emojiUsageStore, catalog, Log.Logger);
-
-        await messageTracker.RecordMessageBatchUsageAsync(1, new[] { $"<:test:{emojiId}> <:test:{emojiId}>" }, CancellationToken.None);
-        await reactionTracker.RecordBatchUsageAsync(1, new[] { emojiId, emojiId, emojiId }, CancellationToken.None);
+        EmojiUsageStore emojiUsageStore = new EmojiUsageStore(new EmojiDbContextFactory());
+        await emojiUsageStore.RecordBatchAsync(
+            1,
+            [new EmojiUsageIncrement(1, emojiId, 2, 0), new EmojiUsageIncrement(1, emojiId, 0, 3)],
+            [emojiId],
+            CancellationToken.None
+        );
 
         EmojiUsageCount usage = await db.EmojiUsageCounts.SingleAsync(x => x.GuildId == 1 && x.EmojiId == emojiId);
         usage.MessageUsageCount.ShouldBe(2);
         usage.ReactionUsageCount.ShouldBe(3);
     }
 
-    private sealed class StaticTrackedEmojiCatalog : ITrackedEmojiCatalog
+    private sealed class EmojiDbContextFactory : IDbContextFactory<BotDbContext>
     {
-        public bool TryGetTrackedEmojiIds(ulong guildId, out IReadOnlyCollection<ulong> emojiIds)
-        {
-            emojiIds = new ulong[] { 500 };
-            return true;
-        }
-    }
-
-    private sealed class PruningTrackedEmojiCatalog : ITrackedEmojiCatalog
-    {
-        public bool TryGetTrackedEmojiIds(ulong guildId, out IReadOnlyCollection<ulong> emojiIds)
-        {
-            emojiIds = guildId == 1 ? new ulong[] { 501 } : new ulong[] { 500 };
-            return true;
-        }
-    }
-
-    private sealed class AggregatingTrackedEmojiCatalog(ulong emojiId) : ITrackedEmojiCatalog
-    {
-        public bool TryGetTrackedEmojiIds(ulong guildId, out IReadOnlyCollection<ulong> emojiIds)
-        {
-            emojiIds = new[] { emojiId };
-            return true;
-        }
+        public BotDbContext CreateDbContext() => PostgresDatabaseFixture.CreateDbContext();
     }
 }

@@ -25,8 +25,8 @@ public sealed class RoleColourReconciliationWorkerTests
             .Returns(_ => Task.FromResult(new BotDbContext(new DbContextOptions<BotDbContext>())), _ => Task.FromResult(new BotDbContext(options)));
 
         RecordingSink sink = new RecordingSink();
-        using Logger logger = new LoggerConfiguration().WriteTo.Sink(sink).CreateLogger();
-        using DiscordSocketClient client = new DiscordSocketClient();
+        await using Logger logger = new LoggerConfiguration().WriteTo.Sink(sink).CreateLogger();
+        await using DiscordSocketClient client = new DiscordSocketClient();
 
         using RoleColourReconciliationWorker worker = new RoleColourReconciliationWorker(
             client,
@@ -58,8 +58,8 @@ public sealed class RoleColourReconciliationWorkerTests
         factory.CreateDbContextAsync(Arg.Any<CancellationToken>()).Returns(_ => Task.FromResult(new BotDbContext(options)));
 
         RecordingSink sink = new RecordingSink();
-        using Logger logger = new LoggerConfiguration().WriteTo.Sink(sink).CreateLogger();
-        using DiscordSocketClient client = new DiscordSocketClient();
+        await using Logger logger = new LoggerConfiguration().WriteTo.Sink(sink).CreateLogger();
+        await using DiscordSocketClient client = new DiscordSocketClient();
 
         using RoleColourReconciliationWorker worker = new RoleColourReconciliationWorker(
             client,
@@ -98,8 +98,8 @@ public sealed class RoleColourReconciliationWorkerTests
             });
 
         RecordingSink sink = new RecordingSink();
-        using Logger logger = new LoggerConfiguration().WriteTo.Sink(sink).CreateLogger();
-        using DiscordSocketClient client = new DiscordSocketClient();
+        await using Logger logger = new LoggerConfiguration().WriteTo.Sink(sink).CreateLogger();
+        await using DiscordSocketClient client = new DiscordSocketClient();
 
         using RoleColourReconciliationWorker worker = new RoleColourReconciliationWorker(
             client,

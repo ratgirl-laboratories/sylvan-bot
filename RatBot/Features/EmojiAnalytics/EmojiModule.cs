@@ -1,12 +1,10 @@
 using System.Text;
-using RatBot.Application.Reactions;
-using RatBot.Domain.Emoji;
 
-namespace RatBot.Commands.Emoji;
+namespace RatBot.Features.EmojiAnalytics;
 
 [Group("emoji", "Emoji analytics commands.")]
 [DefaultMemberPermissions(GuildPermission.SendMessages)]
-public sealed class EmojiModule(ReactionUsageTracker reactionUsageTracker, IOptions<EmojiAnalyticsOptions> options) : SlashCommandBase
+public sealed class EmojiModule(EmojiUsageStore store, IOptions<EmojiAnalyticsOptions> options) : InteractionModuleBase<IInteractionContext>
 {
     private const string UsagePageCustomIdPrefix = "emoji-usage";
     private readonly EmojiAnalyticsOptions _options = options.Value;
@@ -64,6 +62,15 @@ public sealed class EmojiModule(ReactionUsageTracker reactionUsageTracker, IOpti
         return guildEmote is not null ? guildEmote.ToString() : $"[custom:{emojiId}]";
     }
 
+    private async Task<ErrorOr<EmojiUsagePage>> GetUsagePageAsync(int page)
+    {
+        IGuild? guild = await Context.Client.GetGuildAsync(Context.Guild.Id, CacheMode.CacheOnly);
+        if (guild is null)
+            return Error.Unexpected(description: "Tracked guild emoji are not available yet.");
+
+        return await store.GetUsagePageAsync(guild.Id, guild.Emotes.Select(emote => emote.Id).ToArray(), page);
+    }
+
     private async Task RespondWithUsagePageAsync(int page)
     {
         if (Context.Guild is null)
@@ -78,7 +85,7 @@ public sealed class EmojiModule(ReactionUsageTracker reactionUsageTracker, IOpti
             return;
         }
 
-        ErrorOr<EmojiUsagePage> pageResult = await reactionUsageTracker.GetUsagePageAsync(Context.Guild.Id, page).ConfigureAwait(false);
+        ErrorOr<EmojiUsagePage> pageResult = await GetUsagePageAsync(page).ConfigureAwait(false);
 
         if (pageResult.IsError)
         {
@@ -105,7 +112,7 @@ public sealed class EmojiModule(ReactionUsageTracker reactionUsageTracker, IOpti
             return;
         }
 
-        ErrorOr<EmojiUsagePage> pageResult = await reactionUsageTracker.GetUsagePageAsync(Context.Guild.Id, page).ConfigureAwait(false);
+        ErrorOr<EmojiUsagePage> pageResult = await GetUsagePageAsync(page).ConfigureAwait(false);
 
         if (pageResult.IsError)
         {

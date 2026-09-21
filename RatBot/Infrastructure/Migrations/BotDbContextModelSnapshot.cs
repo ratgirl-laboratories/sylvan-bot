@@ -22,7 +22,7 @@ namespace RatBot.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("RatBot.Domain.Emoji.EmojiUsageCount", b =>
+            modelBuilder.Entity("RatBot.Features.EmojiAnalytics.EmojiUsageCount", b =>
                 {
                     b.Property<long>("GuildId")
                         .HasColumnType("bigint");

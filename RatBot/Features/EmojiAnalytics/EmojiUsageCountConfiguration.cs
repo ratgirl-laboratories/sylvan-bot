@@ -1,8 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using RatBot.Domain.Emoji;
 
-namespace RatBot.Infrastructure.Persistence.Configurations;
+namespace RatBot.Features.EmojiAnalytics;
 
 public sealed class EmojiUsageCountConfiguration : IEntityTypeConfiguration<EmojiUsageCount>
 {

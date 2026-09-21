@@ -21,7 +21,7 @@ public sealed class LoggingInteractionTests
     [Test]
     public async Task ExcludeAsync_WhenChannelOmitted_UsesCurrentChannel()
     {
-        using ServiceProvider services = CreateServices(nameof(ExcludeAsync_WhenChannelOmitted_UsesCurrentChannel));
+        await using ServiceProvider services = CreateServices(nameof(ExcludeAsync_WhenChannelOmitted_UsesCurrentChannel));
         IDbContextFactory<BotDbContext> contextFactory = services.GetRequiredService<IDbContextFactory<BotDbContext>>();
         LoggingInteractionFixture fixture = new LoggingInteractionFixture(contextFactory);
 
@@ -35,7 +35,7 @@ public sealed class LoggingInteractionTests
     [Test]
     public async Task IncludeAsync_RemovesExclusion()
     {
-        using ServiceProvider services = CreateServices(nameof(IncludeAsync_RemovesExclusion));
+        await using ServiceProvider services = CreateServices(nameof(IncludeAsync_RemovesExclusion));
         IDbContextFactory<BotDbContext> contextFactory = services.GetRequiredService<IDbContextFactory<BotDbContext>>();
         LoggingInteractionFixture fixture = new LoggingInteractionFixture(contextFactory);
         await fixture.Module.ExcludeAsync();
@@ -51,7 +51,7 @@ public sealed class LoggingInteractionTests
     [Test]
     public async Task ExclusionsAsync_ListsPersistedExclusions()
     {
-        using ServiceProvider services = CreateServices(nameof(ExclusionsAsync_ListsPersistedExclusions));
+        await using ServiceProvider services = CreateServices(nameof(ExclusionsAsync_ListsPersistedExclusions));
         IDbContextFactory<BotDbContext> contextFactory = services.GetRequiredService<IDbContextFactory<BotDbContext>>();
         LoggingInteractionFixture fixture = new LoggingInteractionFixture(contextFactory);
         await fixture.Module.ExcludeAsync();
@@ -65,7 +65,7 @@ public sealed class LoggingInteractionTests
     [Test]
     public async Task ConfigAsync_PartialUpdatePreservesOmittedValues()
     {
-        using ServiceProvider services = CreateServices(nameof(ConfigAsync_PartialUpdatePreservesOmittedValues));
+        await using ServiceProvider services = CreateServices(nameof(ConfigAsync_PartialUpdatePreservesOmittedValues));
         IDbContextFactory<BotDbContext> contextFactory = services.GetRequiredService<IDbContextFactory<BotDbContext>>();
         LoggingInteractionFixture fixture = new LoggingInteractionFixture(contextFactory);
 
@@ -95,7 +95,7 @@ public sealed class LoggingInteractionTests
     [Test]
     public async Task ConfigAsync_WhenEnablingWithoutEitherChannel_Fails()
     {
-        using ServiceProvider services = CreateServices(nameof(ConfigAsync_WhenEnablingWithoutEitherChannel_Fails));
+        await using ServiceProvider services = CreateServices(nameof(ConfigAsync_WhenEnablingWithoutEitherChannel_Fails));
         IDbContextFactory<BotDbContext> contextFactory = services.GetRequiredService<IDbContextFactory<BotDbContext>>();
         LoggingInteractionFixture fixture = new LoggingInteractionFixture(contextFactory);
 
@@ -109,7 +109,7 @@ public sealed class LoggingInteractionTests
     [Test]
     public async Task LoggingModule_RegistersConfigCommandWithFourOptionalParameters()
     {
-        using ServiceProvider services = CreateServices(nameof(LoggingModule_RegistersConfigCommandWithFourOptionalParameters));
+        await using ServiceProvider services = CreateServices(nameof(LoggingModule_RegistersConfigCommandWithFourOptionalParameters));
         InteractionService interactionService = new InteractionService(
             new DiscordSocketClient(),
             new InteractionServiceConfig { AutoServiceScopes = true }
