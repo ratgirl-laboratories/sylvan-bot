@@ -1,9 +1,9 @@
 using System.Collections.Immutable;
-using RatBot.Domain.RoleColours;
+using RatBot.Features.RoleColours;
 using RatBot.Handlers;
 using Shouldly;
 
-namespace RatBot.Discord.Tests.Handlers;
+namespace RatBot.Discord.Tests.Features.RoleColours;
 
 [TestFixture]
 public sealed class RoleColourReconcilerTests

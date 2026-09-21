@@ -1,4 +1,4 @@
-namespace RatBot.Domain.RoleColours;
+namespace RatBot.Features.RoleColours;
 
 public enum MemberColourPreferenceKind
 {

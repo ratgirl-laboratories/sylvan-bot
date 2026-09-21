@@ -20,6 +20,7 @@ using RatBot.Features.Meta;
 using RatBot.Features.Meta.BackgroundWorkers;
 using RatBot.Features.Meta.Gateway;
 using RatBot.Features.Quorum;
+using RatBot.Features.RoleColours;
 using RatBot.Forum;
 using RatBot.Gateway;
 using RatBot.Handlers;
@@ -32,7 +33,6 @@ using RatBot.Infrastructure.Features.Meta;
 using RatBot.Infrastructure.Features.Quorum.Persistence;
 using RatBot.Infrastructure.Features.Timezone.Persistence;
 using RatBot.Infrastructure.Persistence.Repositories;
-using RatBot.Infrastructure.RoleColours;
 using RatBot.Infrastructure.Stores;
 
 namespace RatBot;
@@ -80,7 +80,6 @@ public static class DependencyInjection
             services.AddSingleton<ModerationLoggingStore>();
             services.AddScoped<MetaProposalService>();
             services.AddScoped<MetaSuggestionSettingsService>();
-            services.AddScoped<RoleColourOperations>();
         }
 
         private void AddDiscordAdapter(IConfiguration configuration)
@@ -155,19 +154,22 @@ public static class DependencyInjection
             services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<ModerationLoggingGatewayHandler>());
             services.AddSingleton<ImageBurstSpamGatewayHandler>();
             services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<ImageBurstSpamGatewayHandler>());
-            services.AddSingleton<UserUpdatedGatewayHandler>();
-            services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<UserUpdatedGatewayHandler>());
             services.AddSingleton<MetaProposalPollResolver>();
             services.AddSingleton<MetaProposalGatewayHandler>();
             services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<MetaProposalGatewayHandler>());
             services.AddSingleton<GuildMemberCacheService>();
             services.AddSingleton<ITrackedEmojiCatalog, TrackedEmojiCatalog>();
-            services.AddSingleton<RoleColourReconciler>();
 
             services.AddHostedService<DiscordBotHostedService>();
             services.AddHostedService<GuildMemberCacheBackgroundWorker>();
             services.AddHostedService<EmojiAnalyticsBackgroundWorker>();
-            services.AddHostedService<RoleColourReconciliationBackgroundWorker>();
+
+            services.AddScoped<RoleColourOperations>();
+            services.AddSingleton<RoleColourReconciler>();
+            services.AddSingleton<RoleColourGatewayHandler>();
+            services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<RoleColourGatewayHandler>());
+            services.AddHostedService<RoleColourReconciliationWorker>();
+
             services.AddHostedService<MetaProposalPollBackgroundWorker>();
             services.AddHostedService<LoggingMetadataCleanupBackgroundWorker>();
 

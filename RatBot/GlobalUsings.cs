@@ -11,5 +11,4 @@ global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Hosting;
 global using Microsoft.Extensions.Options;
 global using RatBot.Domain.Features.Meta;
-global using RatBot.Domain.RoleColours;
 global using Serilog;

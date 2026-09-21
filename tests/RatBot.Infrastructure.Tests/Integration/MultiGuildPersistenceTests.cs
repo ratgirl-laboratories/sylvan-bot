@@ -3,10 +3,9 @@ using RatBot.Application.Common.Interfaces;
 using RatBot.Application.MessageContent;
 using RatBot.Application.Reactions;
 using RatBot.Domain.Emoji;
-using RatBot.Domain.RoleColours;
+using RatBot.Features.RoleColours;
 using RatBot.Infrastructure.Data;
 using RatBot.Infrastructure.Features.EmojiAnalytics;
-using RatBot.Infrastructure.RoleColours;
 using RatBot.Infrastructure.Stores;
 using Serilog;
 
@@ -30,13 +29,13 @@ public sealed class MultiGuildPersistenceTests
         await operations.SelectOptionAsync(1, 100, guildA.OptionId, new ulong[] { 10 }, CancellationToken.None);
         await operations.SelectOptionAsync(2, 100, guildB.OptionId, new ulong[] { 10 }, CancellationToken.None);
 
-        (await operations.ListConfiguredOptionsAsync(1, true, CancellationToken.None)).Value.Single().OptionId.ShouldBe(guildA.OptionId);
-        (await operations.ListConfiguredOptionsAsync(2, true, CancellationToken.None)).Value.Single().OptionId.ShouldBe(guildB.OptionId);
+        (await operations.ListConfiguredOptionsAsync(1, true, CancellationToken.None)).Single().OptionId.ShouldBe(guildA.OptionId);
+        (await operations.ListConfiguredOptionsAsync(2, true, CancellationToken.None)).Single().OptionId.ShouldBe(guildB.OptionId);
 
         (await operations.DeleteMappingAsync(1, "red", CancellationToken.None)).IsError.ShouldBeFalse();
 
-        (await operations.ListConfiguredOptionsAsync(1, true, CancellationToken.None)).Value.ShouldBeEmpty();
-        (await operations.ListConfiguredOptionsAsync(2, true, CancellationToken.None)).Value.Single().OptionId.ShouldBe(guildB.OptionId);
+        (await operations.ListConfiguredOptionsAsync(1, true, CancellationToken.None)).ShouldBeEmpty();
+        (await operations.ListConfiguredOptionsAsync(2, true, CancellationToken.None)).Single().OptionId.ShouldBe(guildB.OptionId);
 
         MemberColourPreference guildBPreference = await db.MemberColourPreferences.SingleAsync(x => x.GuildId == 2 && x.UserId == 100);
         guildBPreference.SelectedOptionId.ShouldBe(guildB.OptionId);

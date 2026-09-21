@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using RatBot.Configuration;
 using RatBot.Features.Logging.Gateway;
+using RatBot.Features.RoleColours;
 using RatBot.Gateway;
 using Serilog;
 using Shouldly;
@@ -38,6 +39,7 @@ public sealed class DependencyInjectionTests
 
         gatewayHandlers.ShouldContain(handler => handler is AutobanGatewayHandler);
         gatewayHandlers.ShouldContain(handler => handler is ModerationLoggingGatewayHandler);
+        gatewayHandlers.ShouldContain(handler => handler is RoleColourGatewayHandler);
         provider.GetRequiredService<AutobanGatewayHandler>().ShouldNotBeNull();
         provider.GetRequiredService<ModerationLoggingGatewayHandler>().ShouldNotBeNull();
     }

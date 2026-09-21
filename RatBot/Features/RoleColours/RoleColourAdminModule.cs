@@ -1,22 +1,23 @@
 using System.Text;
-using RatBot.Commands;
-using RatBot.Handlers;
-using RatBot.Infrastructure.RoleColours;
 
-namespace RatBot.Features.RoleColours.Commands;
+namespace RatBot.Features.RoleColours;
 
 [Group("colour-admin", "Administrative role colour commands.")]
 [DefaultMemberPermissions(GuildPermission.Administrator)]
-public sealed class RoleColourAdminModule(RoleColourOperations operations, RoleColourReconciler reconciler) : SlashCommandBase
+public sealed class RoleColourAdminModule(RoleColourOperations operations, RoleColourReconciler reconciler)
+    : InteractionModuleBase<SocketInteractionContext>
 {
     private const string ResponseNoGuild = "This command can only be used in a guild.";
 
     [SlashCommand("add", "Register a source/display role colour mapping.")]
     [RequireUserPermission(GuildPermission.Administrator)]
     public async Task AddAsync(
-        [Summary("name", "Name used to identify this colour.")] string name,
-        [Summary("source", "Source colour role users select.")] IRole source,
-        [Summary("display", "Display colour role RatBot manages.")] IRole display
+        [Summary("name", "Name used to identify this colour.")]
+        string name,
+        [Summary("source", "Source colour role users select.")]
+        IRole source,
+        [Summary("display", "Display colour role RatBot manages.")]
+        IRole display
     )
     {
         if (Context.Guild is null)
@@ -34,6 +35,7 @@ public sealed class RoleColourAdminModule(RoleColourOperations operations, RoleC
         }
 
         await DeferAsync(ephemeral: true);
+
         ErrorOr<RoleColourOption> result = await operations.AddMappingAsync(
             Context.Guild.Id,
             name,
@@ -47,6 +49,7 @@ public sealed class RoleColourAdminModule(RoleColourOperations operations, RoleC
             async option =>
             {
                 await reconciler.ReconcileGuildAsync(Context.Guild, CancellationToken.None);
+
                 await FollowupAsync(
                     $"Registered colour option `{option.Key}` (‘{option.Label}’): {source.Mention} -> {display.Mention}.",
                     ephemeral: true
@@ -59,9 +62,12 @@ public sealed class RoleColourAdminModule(RoleColourOperations operations, RoleC
     [SlashCommand("upsert", "Create or update a source/display role colour mapping.")]
     [RequireUserPermission(GuildPermission.Administrator)]
     public async Task UpsertAsync(
-        [Summary("name", "Name used to identify this colour.")] string name,
-        [Summary("source", "Source colour role users select.")] IRole source,
-        [Summary("display", "Display colour role RatBot manages.")] IRole display
+        [Summary("name", "Name used to identify this colour.")]
+        string name,
+        [Summary("source", "Source colour role users select.")]
+        IRole source,
+        [Summary("display", "Display colour role RatBot manages.")]
+        IRole display
     )
     {
         if (Context.Guild is null)
@@ -79,6 +85,7 @@ public sealed class RoleColourAdminModule(RoleColourOperations operations, RoleC
         }
 
         await DeferAsync(ephemeral: true);
+
         ErrorOr<(RoleColourOption Option, bool Created)> result = await operations.UpsertMappingAsync(
             Context.Guild.Id,
             name,
@@ -93,6 +100,7 @@ public sealed class RoleColourAdminModule(RoleColourOperations operations, RoleC
             {
                 await reconciler.ReconcileGuildAsync(Context.Guild, CancellationToken.None);
                 string action = upsert.Created ? "Registered" : "Updated";
+
                 await FollowupAsync(
                     $"{action} colour option `{upsert.Option.Key}` (‘{upsert.Option.Label}’): {source.Mention} -> {display.Mention}.",
                     ephemeral: true
@@ -113,7 +121,11 @@ public sealed class RoleColourAdminModule(RoleColourOperations operations, RoleC
         }
 
         await DeferAsync(ephemeral: true);
-        ErrorOr<RoleColourOption> result = await operations.DeleteMappingAsync(Context.Guild.Id, name, CancellationToken.None);
+
+        ErrorOr<RoleColourOption> result = await operations.DeleteMappingAsync(
+            Context.Guild.Id,
+            name,
+            CancellationToken.None);
 
         await result.SwitchFirstAsync(
             async option =>
@@ -127,7 +139,8 @@ public sealed class RoleColourAdminModule(RoleColourOperations operations, RoleC
 
     [SlashCommand("list", "List configured role colour options.")]
     [RequireUserPermission(GuildPermission.Administrator)]
-    public async Task ListAsync([Summary("include-disabled", "Include disabled colour options.")] bool includeDisabled = true)
+    public async Task ListAsync(
+        [Summary("include-disabled", "Include disabled colour options.")] bool includeDisabled = true)
     {
         if (Context.Guild is null)
         {
@@ -135,12 +148,11 @@ public sealed class RoleColourAdminModule(RoleColourOperations operations, RoleC
             return;
         }
 
-        ErrorOr<ImmutableArray<RoleColourOption>> result = await operations.ListConfiguredOptionsAsync(
+        ImmutableArray<RoleColourOption> options = await operations.ListConfiguredOptionsAsync(
             Context.Guild.Id,
             includeDisabled,
             CancellationToken.None
         );
-        ImmutableArray<RoleColourOption> options = result.Value;
 
         if (options.IsEmpty)
         {
@@ -162,12 +174,12 @@ public sealed class RoleColourAdminModule(RoleColourOperations operations, RoleC
         }
 
         await DeferAsync(ephemeral: true);
-        ErrorOr<ImmutableArray<RoleColourOption>> optionsResult = await operations.ListConfiguredOptionsAsync(
+
+        ImmutableArray<RoleColourOption> enabled = await operations.ListConfiguredOptionsAsync(
             Context.Guild.Id,
             false,
             CancellationToken.None
         );
-        ImmutableArray<RoleColourOption> enabled = optionsResult.Value;
 
         if (enabled.IsEmpty)
         {
@@ -203,7 +215,9 @@ public sealed class RoleColourAdminModule(RoleColourOperations operations, RoleC
         foreach (RoleColourOption option in options)
         {
             string state = option.IsEnabled ? "enabled" : "disabled";
-            builder.AppendLine().Append($"`{option.Key}`: <@&{option.SourceRoleId}> -> <@&{option.DisplayRoleId}> ({state})");
+
+            builder.AppendLine()
+                .Append($"`{option.Key}`: <@&{option.SourceRoleId}> -> <@&{option.DisplayRoleId}> ({state})");
         }
 
         return builder.ToString();

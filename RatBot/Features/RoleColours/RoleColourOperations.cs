@@ -1,36 +1,38 @@
 using Microsoft.EntityFrameworkCore;
 using RatBot.Infrastructure.Data;
 
-namespace RatBot.Infrastructure.RoleColours;
+namespace RatBot.Features.RoleColours;
 
 public sealed class RoleColourOperations(BotDbContext db)
 {
-    public async Task<ErrorOr<ImmutableArray<RoleColourOption>>> ListEligibleOptionsAsync(
+    public async Task<ImmutableArray<RoleColourOption>> ListEligibleOptionsAsync(
         ulong guildId,
         IReadOnlyCollection<ulong> currentMemberRoleIds,
         CancellationToken ct
     ) =>
-        (
-            await db
-                .RoleColourOptions.AsNoTracking()
-                .Where(option => option.GuildId == guildId && option.IsEnabled && currentMemberRoleIds.Contains(option.SourceRoleId))
-                .OrderBy(option => option.Label)
-                .ThenBy(option => option.NormalisedKey)
-                .ToArrayAsync(ct)
-        ).ToImmutableArray();
+    (
+        await db
+            .RoleColourOptions.AsNoTracking()
+            .Where(option => option.GuildId == guildId
+                             && option.IsEnabled
+                             && currentMemberRoleIds.Contains(option.SourceRoleId))
+            .OrderBy(option => option.Label)
+            .ThenBy(option => option.NormalisedKey)
+            .ToArrayAsync(ct)
+    ).ToImmutableArray();
 
-    public async Task<ErrorOr<ImmutableArray<RoleColourOption>>> ListConfiguredOptionsAsync(
+    public async Task<ImmutableArray<RoleColourOption>> ListConfiguredOptionsAsync(
         ulong guildId,
         bool includeDisabled,
         CancellationToken ct
     ) =>
-        (
-            await db
-                .RoleColourOptions.AsNoTracking()
-                .Where(option => option.GuildId == guildId && (includeDisabled || option.IsEnabled))
-                .OrderBy(option => option.Key)
-                .ToArrayAsync(ct)
-        ).ToImmutableArray();
+    (
+        await db
+            .RoleColourOptions.AsNoTracking()
+            .Where(option => option.GuildId == guildId && (includeDisabled || option.IsEnabled))
+            .OrderBy(option => option.Key)
+            .ToArrayAsync(ct)
+    ).ToImmutableArray();
 
     public async Task<ErrorOr<RoleColourOption>> SelectOptionAsync(
         ulong guildId,
@@ -53,7 +55,9 @@ public sealed class RoleColourOperations(BotDbContext db)
         );
 
         if (preference is null)
-            await db.MemberColourPreferences.AddAsync(MemberColourPreference.CreateForOption(guildId, userId, selectedOptionId), ct);
+            await db.MemberColourPreferences.AddAsync(
+                MemberColourPreference.CreateForOption(guildId, userId, selectedOptionId),
+                ct);
         else
             preference.SelectOption(selectedOptionId);
 
@@ -61,7 +65,7 @@ public sealed class RoleColourOperations(BotDbContext db)
         return option;
     }
 
-    public async Task<ErrorOr<Success>> SelectNoColourAsync(ulong guildId, ulong userId, CancellationToken ct)
+    public async Task SelectNoColourAsync(ulong guildId, ulong userId, CancellationToken ct)
     {
         MemberColourPreference? preference = await db.MemberColourPreferences.SingleOrDefaultAsync(
             p => p.GuildId == guildId && p.UserId == userId,
@@ -74,7 +78,6 @@ public sealed class RoleColourOperations(BotDbContext db)
             preference.SelectNoColour();
 
         await db.SaveChangesAsync(ct);
-        return Result.Success;
     }
 
     public async Task<ErrorOr<RoleColourOption>> AddMappingAsync(
@@ -86,13 +89,20 @@ public sealed class RoleColourOperations(BotDbContext db)
         CancellationToken ct
     )
     {
-        ErrorOr<RoleColourOption> optionResult = RoleColourOption.Create(guildId, key, label, sourceRoleId, displayRoleId);
+        ErrorOr<RoleColourOption> optionResult = RoleColourOption.Create(
+            guildId,
+            key,
+            label,
+            sourceRoleId,
+            displayRoleId);
 
         if (optionResult.IsError)
             return optionResult.Errors;
 
         RoleColourOption option = optionResult.Value;
-        List<RoleColourOption> existing = await db.RoleColourOptions.AsNoTracking().Where(o => o.GuildId == guildId).ToListAsync(ct);
+
+        List<RoleColourOption> existing =
+            await db.RoleColourOptions.AsNoTracking().Where(o => o.GuildId == guildId).ToListAsync(ct);
 
         if (existing.Exists(o => string.Equals(o.NormalisedKey, option.NormalisedKey, StringComparison.Ordinal)))
             return Error.Conflict(description: $"Colour option `{option.Key}` is already registered.");
@@ -117,7 +127,12 @@ public sealed class RoleColourOperations(BotDbContext db)
         CancellationToken ct
     )
     {
-        ErrorOr<RoleColourOption> optionResult = RoleColourOption.Create(guildId, key, label, sourceRoleId, displayRoleId);
+        ErrorOr<RoleColourOption> optionResult = RoleColourOption.Create(
+            guildId,
+            key,
+            label,
+            sourceRoleId,
+            displayRoleId);
 
         if (optionResult.IsError)
             return optionResult.Errors;
@@ -126,7 +141,9 @@ public sealed class RoleColourOperations(BotDbContext db)
         List<RoleColourOption> existing = await db.RoleColourOptions.Where(o => o.GuildId == guildId).ToListAsync(ct);
         RoleColourOption? option = existing.SingleOrDefault(o => o.SourceRoleId == sourceRoleId);
 
-        if (existing.Exists(o => string.Equals(o.NormalisedKey, candidate.NormalisedKey, StringComparison.Ordinal) && o.OptionId != option?.OptionId))
+        if (existing.Exists(o =>
+                string.Equals(o.NormalisedKey, candidate.NormalisedKey, StringComparison.Ordinal)
+                && o.OptionId != option?.OptionId))
             return Error.Conflict(description: $"Colour option `{candidate.Key}` is already registered.");
 
         if (existing.Exists(o => o.DisplayRoleId == displayRoleId && o.OptionId != option?.OptionId))
@@ -156,14 +173,19 @@ public sealed class RoleColourOperations(BotDbContext db)
             return Error.Validation(description: "Key is required.");
 
         string normalized = trimmedKey.ToUpperInvariant();
-        RoleColourOption? option = await db.RoleColourOptions.SingleOrDefaultAsync(o => o.GuildId == guildId && o.NormalisedKey == normalized, ct);
+
+        RoleColourOption? option = await db.RoleColourOptions.SingleOrDefaultAsync(
+            o => o.GuildId == guildId && o.NormalisedKey == normalized,
+            ct);
 
         if (option is null)
             return Error.NotFound(description: $"Colour option `{trimmedKey}` is not registered.");
 
         List<MemberColourPreference> affected = await db
             .MemberColourPreferences.Where(p =>
-                p.GuildId == guildId && p.Kind == MemberColourPreferenceKind.ConfiguredOption && p.SelectedOptionId == option.OptionId
+                p.GuildId == guildId
+                && p.Kind == MemberColourPreferenceKind.ConfiguredOption
+                && p.SelectedOptionId == option.OptionId
             )
             .ToListAsync(ct);
 

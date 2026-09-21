@@ -18,8 +18,10 @@ public sealed class MultiGuildBackgroundWorkerTests
             guildId =>
             {
                 visited.Add(guildId);
+
                 if (guildId == 2)
                     throw new InvalidOperationException("boom");
+
                 return Task.CompletedTask;
             },
             Log.Logger,
@@ -27,27 +29,5 @@ public sealed class MultiGuildBackgroundWorkerTests
         );
 
         visited.ShouldBe([1UL, 2UL, 3UL]);
-    }
-
-    [Test]
-    public async Task RoleColourReconciliationWorker_VisitsAvailableConfiguredGuildsAndContinuesAfterFailure()
-    {
-        List<ulong> attempted = [];
-
-        await RoleColourReconciliationBackgroundWorker.ProcessConfiguredGuildsAsync(
-            [1UL, 2UL, 3UL, 4UL],
-            guildId => guildId != 3,
-            guildId =>
-            {
-                attempted.Add(guildId);
-                if (guildId == 2)
-                    throw new InvalidOperationException("boom");
-                return Task.FromResult(0);
-            },
-            Log.Logger,
-            CancellationToken.None
-        );
-
-        attempted.ShouldBe([1UL, 2UL, 4UL]);
     }
 }

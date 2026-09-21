@@ -1,11 +1,11 @@
-using RatBot.Handlers;
+using RatBot.Gateway;
 
-namespace RatBot.Gateway;
+namespace RatBot.Features.RoleColours;
 
-public sealed class UserUpdatedGatewayHandler(DiscordSocketClient discordClient, RoleColourReconciler reconciler, ILogger logger)
+public sealed class RoleColourGatewayHandler(DiscordSocketClient discordClient, RoleColourReconciler reconciler, ILogger logger)
     : IDiscordGatewayHandler
 {
-    private readonly ILogger _logger = logger.ForContext<UserUpdatedGatewayHandler>();
+    private readonly ILogger _logger = logger.ForContext<RoleColourGatewayHandler>();
 
     public Task InitializeAsync(CancellationToken ct)
     {

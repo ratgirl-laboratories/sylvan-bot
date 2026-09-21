@@ -1,7 +1,7 @@
-using RatBot.Domain.RoleColours;
+using RatBot.Features.RoleColours;
 using Shouldly;
 
-namespace RatBot.Domain.Tests.RoleColours;
+namespace RatBot.Discord.Tests.Features.RoleColours;
 
 [TestFixture]
 public sealed class MemberColourPreferenceTests

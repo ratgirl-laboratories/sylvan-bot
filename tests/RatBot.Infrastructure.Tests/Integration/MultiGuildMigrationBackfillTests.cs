@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using RatBot.Domain.RoleColours;
+using RatBot.Features.RoleColours;
 using RatBot.Infrastructure.Data;
 
 namespace RatBot.Infrastructure.Tests.Integration;

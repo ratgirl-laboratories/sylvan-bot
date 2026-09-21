@@ -1,10 +1,8 @@
-using RatBot.Handlers;
-using RatBot.Infrastructure.RoleColours;
-
-namespace RatBot.Commands.Colour;
+namespace RatBot.Features.RoleColours;
 
 [Group("colour", "Pick or remove your display colour.")]
-public sealed class ColourModule(RoleColourOperations operations, RoleColourReconciler reconciler) : InteractionModuleBase<IInteractionContext>
+public sealed class ColourModule(RoleColourOperations operations, RoleColourReconciler reconciler)
+    : InteractionModuleBase<IInteractionContext>
 {
     private const string SwapPrefix = "colour-swap";
 
@@ -92,23 +90,29 @@ public sealed class ColourModule(RoleColourOperations operations, RoleColourReco
             return;
         }
 
-        Log.Debug("colour_swap select guild_id={GuildId} user_id={UserId} option_id={OptionId}", Context.Guild?.Id, Context.User.Id, optId);
+        Log.Debug(
+            "colour_swap select guild_id={GuildId} user_id={UserId} option_id={OptionId}",
+            Context.Guild?.Id,
+            Context.User.Id,
+            optId);
 
         // Rebuild components from fresh eligible list and mark selected as default
         IGuildUser invoker = (IGuildUser)Context.User;
         IReadOnlyCollection<ulong> roleIds = invoker.RoleIds;
 
-        ErrorOr<ImmutableArray<RoleColourOption>> eligibleResult = await operations.ListEligibleOptionsAsync(
+        ImmutableArray<RoleColourOption> eligible = await operations.ListEligibleOptionsAsync(
             Context.Guild.Id,
             roleIds,
             CancellationToken.None
         );
-        ImmutableArray<RoleColourOption> eligible = eligibleResult.Value;
 
         string applyId = $"{SwapPrefix}:apply:{ownerUserId}:{optId}";
         string selectId = $"{SwapPrefix}:select:{ownerUserId}";
 
-        SelectMenuBuilder menu = new SelectMenuBuilder().WithCustomId(selectId).WithPlaceholder("Choose a colour…").WithMinValues(1).WithMaxValues(1);
+        SelectMenuBuilder menu = new SelectMenuBuilder().WithCustomId(selectId)
+            .WithPlaceholder("Choose a colour…")
+            .WithMinValues(1)
+            .WithMaxValues(1);
 
         foreach (RoleColourOption opt in eligible)
         {
@@ -119,10 +123,7 @@ public sealed class ColourModule(RoleColourOperations operations, RoleColourReco
         ComponentBuilder builder = new ComponentBuilder().WithSelectMenu(menu).WithButton("Apply", applyId);
 
         if (Context.Interaction is SocketMessageComponent smc)
-            await smc.UpdateAsync(m =>
-            {
-                m.Components = builder.Build();
-            });
+            await smc.UpdateAsync(m => { m.Components = builder.Build(); });
         else
             // Fallback: acknowledge with an ephemeral response if somehow not a component
             await RespondAsync("Selection updated.", ephemeral: true, components: builder.Build());
@@ -140,13 +141,7 @@ public sealed class ColourModule(RoleColourOperations operations, RoleColourReco
         Log.Debug("colour_remove start guild_id={GuildId} user_id={UserId}", Context.Guild.Id, Context.User.Id);
         await DeferAsync(ephemeral: true);
 
-        ErrorOr<Success> result = await operations.SelectNoColourAsync(Context.Guild.Id, Context.User.Id, CancellationToken.None);
-
-        if (result.IsError)
-        {
-            await FollowupAsync(result.FirstError.Description, ephemeral: true);
-            return;
-        }
+        await operations.SelectNoColourAsync(Context.Guild.Id, Context.User.Id, CancellationToken.None);
 
         Log.Debug("colour_remove reconcile guild_id={GuildId} user_id={UserId}", Context.Guild.Id, Context.User.Id);
         await reconciler.ReconcileMemberAsync((SocketGuild)Context.Guild, Context.User.Id, CancellationToken.None);
@@ -165,12 +160,11 @@ public sealed class ColourModule(RoleColourOperations operations, RoleColourReco
         IGuildUser invoker = (IGuildUser)Context.User;
         IReadOnlyCollection<ulong> roleIds = invoker.RoleIds;
 
-        ErrorOr<ImmutableArray<RoleColourOption>> eligibleResult = await operations.ListEligibleOptionsAsync(
+        ImmutableArray<RoleColourOption> eligible = await operations.ListEligibleOptionsAsync(
             Context.Guild.Id,
             roleIds,
             CancellationToken.None
         );
-        ImmutableArray<RoleColourOption> eligible = eligibleResult.Value;
 
         Log.Debug(
             "colour_swap start guild_id={GuildId} user_id={UserId} eligible_count={Eligible}",
@@ -186,7 +180,9 @@ public sealed class ColourModule(RoleColourOperations operations, RoleColourReco
 
                 return;
             case > 25:
-                await RespondAsync("You have too many eligible colours to show in one menu. Somehow. Uh, contact ratgirl I guess", ephemeral: true);
+                await RespondAsync(
+                    "You have too many eligible colours to show in one menu. Somehow. Uh, contact ratgirl I guess",
+                    ephemeral: true);
 
                 return;
         }
@@ -199,7 +195,8 @@ public sealed class ColourModule(RoleColourOperations operations, RoleColourReco
         foreach (RoleColourOption opt in eligible)
             menu.AddOption(opt.Label, opt.OptionId.Value.ToString());
 
-        ComponentBuilder components = new ComponentBuilder().WithSelectMenu(menu).WithButton("Apply", applyId, disabled: true);
+        ComponentBuilder components =
+            new ComponentBuilder().WithSelectMenu(menu).WithButton("Apply", applyId, disabled: true);
 
         await RespondAsync("Select a colour, then press Apply.", components: components.Build(), ephemeral: true);
     }
@@ -209,10 +206,7 @@ public sealed class ColourModule(RoleColourOperations operations, RoleColourReco
         try
         {
             if (Context.Interaction is SocketMessageComponent smc)
-                await smc.UpdateAsync(m =>
-                {
-                    m.Components = new ComponentBuilder().Build();
-                });
+                await smc.UpdateAsync(m => { m.Components = new ComponentBuilder().Build(); });
         }
         catch
         {

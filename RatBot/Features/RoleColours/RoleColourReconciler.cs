@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RatBot.Infrastructure.Data;
 
-namespace RatBot.Handlers;
+namespace RatBot.Features.RoleColours;
 
 public sealed class RoleColourReconciler(IDbContextFactory<BotDbContext> dbContextFactory, ILogger logger)
 {

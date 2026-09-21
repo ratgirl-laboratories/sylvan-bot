@@ -321,7 +321,7 @@ namespace RatBot.Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("RatBot.Domain.RoleColours.MemberColourPreference", b =>
+            modelBuilder.Entity("RatBot.Features.RoleColours.MemberColourPreference", b =>
                 {
                     b.Property<Guid>("PreferenceId")
                         .HasColumnType("uuid");
@@ -353,7 +353,7 @@ namespace RatBot.Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("RatBot.Domain.RoleColours.RoleColourOption", b =>
+            modelBuilder.Entity("RatBot.Features.RoleColours.RoleColourOption", b =>
                 {
                     b.Property<Guid>("OptionId")
                         .HasColumnType("uuid");
@@ -439,9 +439,9 @@ namespace RatBot.Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("RatBot.Domain.RoleColours.MemberColourPreference", b =>
+            modelBuilder.Entity("RatBot.Features.RoleColours.MemberColourPreference", b =>
                 {
-                    b.HasOne("RatBot.Domain.RoleColours.RoleColourOption", null)
+                    b.HasOne("RatBot.Features.RoleColours.RoleColourOption", null)
                         .WithMany()
                         .HasForeignKey("GuildId", "SelectedOptionId")
                         .HasPrincipalKey("GuildId", "OptionId")
