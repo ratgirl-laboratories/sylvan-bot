@@ -42,7 +42,33 @@ public sealed class MultiGuildMigrationBackfillTests
                 (long)LegacyGuildId
             );
 
+            await db.Database.MigrateAsync("20260719054819_RemoveMessageLogEntryObservedMessageForeignKey");
+            await db.Database.ExecuteSqlRawAsync(
+                """
+                INSERT INTO "AdventureLeaderboardMessageState" ("GuildId", "Id", "ChannelId", "MessageId", "Year", "LastRenderHash")
+                VALUES ({0}, 1, 400, 600, 2026, 'legacy');
+                INSERT INTO "AdventureSettings" ("GuildId", "AdventurerRoleId")
+                VALUES ({0}, 700);
+                """,
+                (long)LegacyGuildId
+            );
+
             await db.Database.MigrateAsync();
+
+            (
+                await db
+                    .Database.SqlQueryRaw<int>(
+                        """
+                        SELECT COUNT(*)::integer AS "Value" FROM information_schema.tables
+                        WHERE table_schema = 'public'
+                          AND table_name IN ('AdventureForumThreadLinks', 'AdventureLeaderboardMessageState', 'AdventureSettings')
+                        """
+                    )
+                    .SingleAsync()
+            ).ShouldBe(0);
+            (await db.Database.SqlQueryRaw<int>("SELECT COUNT(*) AS \"Value\" FROM \"RoleColourOptions\"").SingleAsync()).ShouldBe(1);
+            (await db.Database.SqlQueryRaw<int>("SELECT COUNT(*) AS \"Value\" FROM \"EmojiUsageCounts\"").SingleAsync()).ShouldBe(1);
+            (await db.Database.SqlQueryRaw<int>("SELECT COUNT(*) AS \"Value\" FROM message_log_entries").SingleAsync()).ShouldBe(1);
 
             await Should.ThrowAsync<DbUpdateException>(async () =>
             {

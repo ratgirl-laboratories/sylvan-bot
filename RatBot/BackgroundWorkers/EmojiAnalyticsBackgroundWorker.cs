@@ -78,7 +78,8 @@ public sealed class EmojiAnalyticsBackgroundWorker(
         }
     }
 
-    private async Task ProcessMessageContentBatchAsync(Queue<GuildMessageContent> messageContentBatch, CancellationToken ct)
+    private async Task ProcessMessageContentBatchAsync(Queue<GuildMessageContent> messageContentBatch,
+        CancellationToken ct)
     {
         try
         {
@@ -88,12 +89,15 @@ public sealed class EmojiAnalyticsBackgroundWorker(
             {
                 EmojiUsageTracker emojiUsageTracker = scope.ServiceProvider.GetRequiredService<EmojiUsageTracker>();
 
-                foreach (IGrouping<ulong, GuildMessageContent> guildBatch in messageContentBatch.GroupBy(item => item.GuildId))
+                foreach (IGrouping<ulong, GuildMessageContent> guildBatch in messageContentBatch.GroupBy(item =>
+                             item.GuildId))
                     await emojiUsageTracker
                         .RecordMessageBatchUsageAsync(guildBatch.Key, guildBatch.Select(item => item.Content), ct)
                         .ConfigureAwait(false);
 
-                _logger.Debug("Processed {Count} message content emoji usage events from channel.", messageContentBatch.Count);
+                _logger.Debug(
+                    "Processed {Count} message content emoji usage events from channel.",
+                    messageContentBatch.Count);
             }
         }
         catch (Exception ex)
@@ -110,7 +114,8 @@ public sealed class EmojiAnalyticsBackgroundWorker(
 
             await using (scope.ConfigureAwait(false))
             {
-                ReactionUsageTracker reactionUsageTracker = scope.ServiceProvider.GetRequiredService<ReactionUsageTracker>();
+                ReactionUsageTracker reactionUsageTracker =
+                    scope.ServiceProvider.GetRequiredService<ReactionUsageTracker>();
 
                 foreach (IGrouping<ulong, GuildReactionEmoji> guildBatch in emojiBatch.GroupBy(item => item.GuildId))
                     await reactionUsageTracker
@@ -138,7 +143,9 @@ public sealed class EmojiAnalyticsBackgroundWorker(
         if (await completedTask.ConfigureAwait(false))
             return true;
 
-        Task<bool> otherTask = ReferenceEquals(completedTask, reactionWaitTask) ? messageContentWaitTask : reactionWaitTask;
+        Task<bool> otherTask = ReferenceEquals(completedTask, reactionWaitTask)
+            ? messageContentWaitTask
+            : reactionWaitTask;
 
         return await otherTask.ConfigureAwait(false);
     }

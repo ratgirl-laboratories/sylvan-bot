@@ -10,7 +10,6 @@ using RatBot.Application.MessageContent;
 using RatBot.Application.Moderation;
 using RatBot.Application.Reactions;
 using RatBot.BackgroundWorkers;
-using RatBot.Commands.AdventureLeaderboard;
 using RatBot.Commands.Emoji;
 using RatBot.Configuration;
 using RatBot.Features.EmojiYoink;
@@ -97,8 +96,6 @@ public static class DependencyInjection
                 .Validate(options => options.MessageCacheSize >= 1000, "Discord message cache size must be at least 1000.")
                 .ValidateOnStart();
 
-            services.AddOptions<AdventureLeaderboardOptions>().Bind(configuration.GetSection(AdventureLeaderboardOptions.SectionName));
-
             services
                 .AddOptions<EmojiAnalyticsOptions>()
                 .Bind(configuration.GetSection(EmojiAnalyticsOptions.SectionName))
@@ -165,10 +162,6 @@ public static class DependencyInjection
             services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<MetaProposalGatewayHandler>());
             services.AddSingleton<GuildMemberCacheService>();
             services.AddSingleton<ITrackedEmojiCatalog, TrackedEmojiCatalog>();
-            services.AddSingleton<AdventureLeaderboardClient>();
-            services.AddSingleton<AdventureLeaderboardComponentBuilder>();
-            services.AddSingleton<AdventureAccessController>();
-            services.AddSingleton<AdventureLeaderboardManager>();
             services.AddSingleton<RoleColourReconciler>();
 
             services.AddHostedService<DiscordBotHostedService>();
@@ -177,7 +170,6 @@ public static class DependencyInjection
             services.AddHostedService<RoleColourReconciliationBackgroundWorker>();
             services.AddHostedService<MetaProposalPollBackgroundWorker>();
             services.AddHostedService<LoggingMetadataCleanupBackgroundWorker>();
-            services.AddHostedService(sp => sp.GetRequiredService<AdventureLeaderboardManager>());
 
             services.AddSingleton<DiscordQuorumMemberIndex>();
             services.AddSingleton<IQuorumMemberSource, DiscordQuorumMemberSource>();
