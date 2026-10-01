@@ -14,8 +14,11 @@ public sealed class EmojiUsageStore(IDbContextFactory<BotDbContext> dbContextFac
     {
         await using BotDbContext db = await dbContextFactory.CreateDbContextAsync(ct);
         HashSet<ulong> tracked = trackedEmojiIds.ToHashSet();
-        List<EmojiUsageCount> rows = await db.EmojiUsageCounts.Where(row => row.GuildId == guildId).ToListAsync(ct);
+
+        EmojiUsageCount[] rows = await db.EmojiUsageCounts.Where(row => row.GuildId == guildId).ToArrayAsync(ct);
+
         db.EmojiUsageCounts.RemoveRange(rows.Where(row => !tracked.Contains(row.EmojiId)));
+
         Dictionary<ulong, EmojiUsageCount> rowsById = rows.ToDictionary(row => row.EmojiId);
 
         foreach (EmojiUsageIncrement increment in increments)
@@ -67,13 +70,19 @@ public sealed class EmojiUsageStore(IDbContextFactory<BotDbContext> dbContextFac
         int totalPages = (int)Math.Ceiling((double)totalCount / clampedPageSize);
         int clampedPage = Math.Clamp(page, 1, totalPages);
 
-        List<EmojiUsageCount> items = await query
+        ImmutableArray<EmojiUsageEntry>.Builder
+            builder = ImmutableArray.CreateBuilder<EmojiUsageEntry>(clampedPageSize);
+
+        IQueryable<EmojiUsageEntry> items = query
             .OrderByDescending(row => row.ReactionUsageCount + row.MessageUsageCount)
             .ThenBy(row => row.EmojiId)
             .Skip((clampedPage - 1) * clampedPageSize)
             .Take(clampedPageSize)
-            .ToListAsync(ct);
+            .Select(row => new EmojiUsageEntry(row.EmojiId, row.MessageUsageCount, row.ReactionUsageCount));
 
-        return new EmojiUsagePage(items, clampedPage, totalPages, totalCount);
+        await foreach (EmojiUsageEntry item in items.AsAsyncEnumerable().WithCancellation(ct))
+            builder.Add(item);
+
+        return new EmojiUsagePage(builder.ToImmutable(), clampedPage, totalPages);
     }
 }

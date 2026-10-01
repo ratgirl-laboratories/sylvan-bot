@@ -1,3 +1,3 @@
 namespace RatBot.Features.EmojiAnalytics;
 
-public sealed record EmojiUsagePage(IReadOnlyList<EmojiUsageCount> Items, int Page, int TotalPages, int TotalCount);
+public readonly record struct EmojiUsagePage(ImmutableArray<EmojiUsageEntry> Items, int Page, int TotalPages);

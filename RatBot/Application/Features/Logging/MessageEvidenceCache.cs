@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace RatBot.Application.Features.Logging;
 
@@ -150,6 +151,7 @@ public sealed class MessageEvidenceCache(EvidenceCacheSettings settings)
         return entry.LastTouchedAtUtc == queued.LastTouchedAtUtc && entry.ExpiresAtUtc == queued.ExpiresAtUtc;
     }
 
+    [StructLayout(LayoutKind.Auto)]
     private readonly record struct EvidenceKey(ulong GuildId, ulong MessageId);
 
     private sealed record CacheEntry(MessageEvidence Evidence, DateTimeOffset LastTouchedAtUtc, DateTimeOffset ExpiresAtUtc, long AttachmentBytes);

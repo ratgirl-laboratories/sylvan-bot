@@ -45,11 +45,11 @@ public sealed class EmojiModule(EmojiUsageStore store, IOptions<EmojiAnalyticsOp
             ])
         );
 
-    private string BuildUsagePageText(IReadOnlyList<EmojiUsageCount> rows)
+    private string BuildUsagePageText(ImmutableArray<EmojiUsageEntry> rows)
     {
         StringBuilder text = new StringBuilder();
 
-        foreach (EmojiUsageCount row in rows)
+        foreach (EmojiUsageEntry row in rows)
             text.AppendLine($"{FormatEmojiForDisplay(row.EmojiId)}: {row.ReactionUsageCount + row.MessageUsageCount}");
 
         return text.ToString();
