@@ -38,7 +38,6 @@ public sealed class PostgresDatabaseFixture
             await db.Database.ExecuteSqlRawAsync("DELETE FROM observed_messages").ConfigureAwait(false);
             await db.Database.ExecuteSqlRawAsync("DELETE FROM logging_excluded_channels").ConfigureAwait(false);
             await db.Database.ExecuteSqlRawAsync("DELETE FROM logging_configurations").ConfigureAwait(false);
-            await db.Database.ExecuteSqlRawAsync("DELETE FROM user_timezones").ConfigureAwait(false);
             await db.Database.ExecuteSqlRawAsync("DELETE FROM quorum_configurations").ConfigureAwait(false);
             await db.MetaProposalStates.ExecuteDeleteAsync().ConfigureAwait(false);
             await db.MetaSuggestionSettings.ExecuteDeleteAsync().ConfigureAwait(false);

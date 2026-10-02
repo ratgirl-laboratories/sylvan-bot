@@ -4,7 +4,6 @@ using RatBot.Application.Common.Forums;
 using RatBot.Application.Features.EmojiYoink;
 using RatBot.Application.Features.Logging;
 using RatBot.Application.Features.Quorum;
-using RatBot.Application.Features.Timezone;
 using RatBot.Application.Moderation;
 using RatBot.Configuration;
 using RatBot.Features.EmojiAnalytics;
@@ -26,7 +25,6 @@ using RatBot.Infrastructure.Data;
 using RatBot.Infrastructure.Features.Logging;
 using RatBot.Infrastructure.Features.Meta;
 using RatBot.Infrastructure.Features.Quorum.Persistence;
-using RatBot.Infrastructure.Features.Timezone.Persistence;
 using RatBot.Infrastructure.Persistence.Repositories;
 using RatBot.Infrastructure.Stores;
 
@@ -54,7 +52,6 @@ public static class DependencyInjection
             services.AddScoped<IModerationService, ModerationService>();
             services.AddScoped<EmojiYoinkOperations>();
             services.AddScoped<QuorumOperations>();
-            services.AddScoped<UserTimezoneOperations>();
         }
 
         private void AddInfrastructure(IConfiguration configuration)
@@ -66,7 +63,6 @@ public static class DependencyInjection
             services.AddScoped<IAutobannedUserRepository, AutobannedUserRepository>();
             services.AddScoped<IImageSpamSettingsStore, ImageSpamSettingsStore>();
             services.AddScoped<IQuorumConfigurationStore>(_ => new QuorumConfigurationStore(connectionString));
-            services.AddScoped<IUserTimezoneStore>(_ => new UserTimezoneStore(connectionString));
             services.AddSingleton<ModerationLoggingStore>();
             services.AddScoped<MetaProposalService>();
             services.AddScoped<MetaSuggestionSettingsService>();

@@ -6,6 +6,13 @@ This project uses [Towncrier](https://towncrier.readthedocs.io/) for human-writt
 
 <!-- towncrier release notes start -->
 
+## 0.4.0 - 2026-10-02
+
+### Removed
+
+- Removed the `/timezone` command and stored user timezone preferences. (#remove-timezone)
+
+
 ## 0.3.0 - 2026-07-04
 
 ### Added

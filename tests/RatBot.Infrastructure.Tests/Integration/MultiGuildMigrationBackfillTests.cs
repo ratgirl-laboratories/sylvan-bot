@@ -53,6 +53,9 @@ public sealed class MultiGuildMigrationBackfillTests
                 (long)LegacyGuildId
             );
 
+            await db.Database.ExecuteSqlRawAsync(
+                "INSERT INTO user_timezones (user_id, timezone_id, updated_at_utc) VALUES (100, 'Europe/London', now())"
+            );
             await db.Database.MigrateAsync();
 
             (
@@ -61,7 +64,7 @@ public sealed class MultiGuildMigrationBackfillTests
                         """
                         SELECT COUNT(*)::integer AS "Value" FROM information_schema.tables
                         WHERE table_schema = 'public'
-                          AND table_name IN ('AdventureForumThreadLinks', 'AdventureLeaderboardMessageState', 'AdventureSettings')
+                          AND table_name IN ('AdventureForumThreadLinks', 'AdventureLeaderboardMessageState', 'AdventureSettings', 'user_timezones')
                         """
                     )
                     .SingleAsync()
